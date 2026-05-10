@@ -158,7 +158,7 @@ async def digest_scheduler_loop() -> None:
     last_sent: dict[int, str] = {}  # telegram_id -> "YYYY-MM-DD"
     while True:
         try:
-            owner_id = app_settings.owner_telegram_id
+            owner_id = app_settings.owner_telegram_ids[0]
             async with get_session() as session:
                 owner = await get_or_create_user(session, owner_id)
                 tz_name = owner.settings.timezone

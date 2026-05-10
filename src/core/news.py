@@ -173,7 +173,7 @@ async def news_scheduler_loop() -> None:
     last_sent: dict[int, str] = {}
     while True:
         try:
-            owner_id = app_settings.owner_telegram_id
+            owner_id = app_settings.owner_telegram_ids[0]
             topics_to_run: list[tuple[str, int]] = []
             async with get_session() as session:
                 owner = await get_or_create_user(session, owner_id)
