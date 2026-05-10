@@ -218,6 +218,7 @@ async def _render_section(telegram_id: int, section: str) -> tuple[str, InlineKe
         s = owner.settings
         openai_key = await get_api_key(session, owner, "openai")
         gemini_key = await get_api_key(session, owner, "gemini")
+        opencode_key = await get_api_key(session, owner, "opencode")
 
     kb = InlineKeyboardBuilder()
 
