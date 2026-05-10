@@ -9,4 +9,4 @@ class OwnerOnly(BaseFilter):
 
     async def __call__(self, event: Message | CallbackQuery) -> bool:
         user = event.from_user
-        return user is not None and user.id == settings.owner_telegram_id
+        return user is not None and user.id in settings.owner_telegram_ids

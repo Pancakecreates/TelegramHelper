@@ -38,6 +38,7 @@ async def _render_menu(telegram_id: int) -> tuple[str, InlineKeyboardMarkup]:
         s = owner.settings
         openai_key = await get_api_key(session, owner, "openai")
         gemini_key = await get_api_key(session, owner, "gemini")
+        opencode_key = await get_api_key(session, owner, "opencode")
 
     text = (
         "⚙ <b>Настройки</b>\n\n"
@@ -49,7 +50,7 @@ async def _render_menu(telegram_id: int) -> tuple[str, InlineKeyboardMarkup]:
         f"🛡 Игнорировать архив: {_check(s.ignore_archived)}\n"
         f"🤖 LLM: <b>{s.llm_provider}</b> · {'тяжёлая' if s.use_heavy_model else 'лёгкая'}\n"
         f"🎤 Транскрипция: <b>{s.transcription_mode}</b>\n"
-        f"🔑 Ключи: OpenAI {_check(bool(openai_key))} · Gemini {_check(bool(gemini_key))}\n\n"
+        f"🔑 Ключи: OpenAI {_check(bool(openai_key))} · Gemini {_check(bool(gemini_key))} · OpenCode {_check(bool(opencode_key))}\n\n"
         "<i>Тапни раздел, чтобы открыть его настройки и описание.</i>"
     )
     kb = InlineKeyboardBuilder()
@@ -359,6 +360,12 @@ async def _render_section(telegram_id: int, section: str) -> tuple[str, InlineKe
                 callback_data="set:choose:llm_provider:gemini",
             ),
         )
+        kb.row(
+            InlineKeyboardButton(
+                text=("• " if s.llm_provider == "opencode" else "") + "OpenCode",
+                callback_data="set:choose:llm_provider:opencode",
+            ),
+        )
         kb.row(InlineKeyboardButton(
             text=f"{_check(s.use_heavy_model)} Тяжёлая модель",
             callback_data="set:tog:use_heavy_model",
@@ -421,11 +428,15 @@ async def _render_section(telegram_id: int, section: str) -> tuple[str, InlineKe
             "🔑 <b>API-ключи</b>\n\n"
             "Хранятся зашифрованными (Fernet). Можно перезаписать в любой момент.\n\n"
             f"OpenAI: {_check(bool(openai_key))}\n"
-            f"Gemini: {_check(bool(gemini_key))}"
+            f"Gemini: {_check(bool(gemini_key))}\n"
+            f"OpenCode: {_check(bool(opencode_key))} (локальный API URL)"
         )
         kb.row(
             InlineKeyboardButton(text="🔑 OpenAI key", callback_data="set:input:openai_key"),
             InlineKeyboardButton(text="🔑 Gemini key", callback_data="set:input:gemini_key"),
+        )
+        kb.row(
+            InlineKeyboardButton(text="🔑 OpenCode URL", callback_data="set:input:opencode_key"),
         )
         kb.row(*_back_row())
 
@@ -452,6 +463,15 @@ async def cb_input_gemini(callback: CallbackQuery, state: FSMContext) -> None:
     await state.set_state(SettingsStates.waiting_gemini_key)
     await callback.message.answer(
         "Пришли Gemini API key с <code>aistudio.google.com</code>. Проверю и сохраню. /cancel — отмена."
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "set:input:opencode_key")
+async def cb_input_opencode(callback: CallbackQuery, state: FSMContext) -> None:
+    await state.set_state(SettingsStates.waiting_opencode_key)
+    await callback.message.answer(
+        "Присли URL локального OpenCode API (например: <code>http://192.168.1.XXX:PORT</code>). /cancel — отмена."
     )
     await callback.answer()
 
@@ -548,6 +568,29 @@ async def step_gemini_key(message: Message, state: FSMContext) -> None:
         await upsert_api_key(session, owner, "gemini", key)
     await state.clear()
     await message.answer("✅ Gemini key сохранён.")
+
+
+@router.message(SettingsStates.waiting_opencode_key)
+async def step_opencode_key(message: Message, state: FSMContext) -> None:
+    url = (message.text or "").strip()
+    if not url:
+        await message.answer("Пустой URL. Повтори или /cancel.")
+        return
+    try:
+        await message.delete()
+    except Exception:
+        pass
+    
+    # Простая валидация URL
+    if not (url.startswith("http://") or url.startswith("https://")):
+        await message.answer("❌ URL должен начинаться с http:// или https://. Повтори или /cancel.")
+        return
+    
+    async with get_session() as session:
+        owner = await get_or_create_user(session, message.from_user.id)
+        await upsert_api_key(session, owner, "opencode", url)
+    await state.clear()
+    await message.answer(f"✅ OpenCode URL сохранён: <code>{url}</code>")
 
 
 @router.message(SettingsStates.waiting_digest_time)

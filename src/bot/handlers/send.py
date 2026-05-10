@@ -9,6 +9,7 @@ from aiogram.types import CallbackQuery, InlineKeyboardButton, Message
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from src.bot.filters import OwnerOnly
+from src.core.alias_resolver import find_account_alias, replace_alias_with_account
 from src.core.contact_resolver import ContactCandidate, resolve
 from src.db.repo import (
     create_pending_action,
@@ -85,6 +86,7 @@ async def cmd_send(
     state: FSMContext,
     userbot_manager: UserbotManager,
 ) -> None:
+    # Получаем клиента по умолчанию (текущий пользователь)
     client = userbot_manager.get_client(message.from_user.id)
     if client is None:
         await message.answer("Сначала /login.")
@@ -93,9 +95,25 @@ async def cmd_send(
     if not raw:
         await message.answer(
             "Использование: <code>/send скажи Оле, что созвон в 8</code>\n"
-            "Или: <code>/send @username | текст сообщения</code>"
+            "Или: <code>/send @username | текст сообщения</code>\n"
+            "Или: <code>/send от лица Имя1 скажи Оле, что созвон в 8</code>"
         )
         return
+
+    # Проверяем алиасы аккаунтов
+    account_id = find_account_alias(raw)
+    if account_id:
+        # Если найден алиас, удаляем его из текста
+        raw = replace_alias_with_account(raw, account_id)
+        
+        # Получаем клиент для указанного аккаунта
+        target_client = userbot_manager.get_client_by_account_id(account_id)
+        if target_client is None:
+            await message.answer(f"❌ Аккаунт {account_id} не найден или не авторизован. Сначала войдите в этот аккаунт.")
+            return
+        
+        # Продолжаем обработку с целевым клиентом
+        client = target_client
 
     recipient_query: str | None = None
     text: str | None = None
@@ -139,7 +157,8 @@ async def cmd_send(
     if len(candidates) == 1 or candidates[0].score >= 90:
         await _create_and_confirm(message, owner_telegram_id=message.from_user.id,
                                   peer_id=candidates[0].peer_id, text=text,
-                                  label=candidates[0].label())
+                                  label=candidates[0].label(), client=client, 
+                                  userbot_manager=userbot_manager)
         return
 
     await state.set_data({"send_text": text})
@@ -156,8 +175,17 @@ async def _create_and_confirm(
     peer_id: int,
     text: str,
     label: str,
+    client: TelegramClient,
+    userbot_manager: UserbotManager,
 ) -> None:
-    payload = json.dumps({"peer_id": peer_id, "text": text}, ensure_ascii=False)
+    # Сохраняем ID клиента в payload для использования при отправке
+    client_id = None
+    for uid, c in userbot_manager._clients.items():
+        if c == client:
+            client_id = uid
+            break
+    
+    payload = json.dumps({"peer_id": peer_id, "text": text, "client_id": client_id}, ensure_ascii=False)
     async with get_session() as session:
         owner = await get_or_create_user(session, owner_telegram_id)
         action = await create_pending_action(session, user_id=owner.id, kind="send_message", payload=payload)
@@ -255,20 +283,28 @@ async def step_edit(message: Message, state: FSMContext) -> None:
 @router.callback_query(F.data.startswith("send:confirm:"))
 async def cb_confirm(callback: CallbackQuery, userbot_manager: UserbotManager) -> None:
     action_id = int(callback.data.split(":")[2])
-    client = userbot_manager.get_client(callback.from_user.id)
-    if client is None:
-        await callback.answer("Сначала /login", show_alert=True)
-        return
-
+    
     async with get_session() as session:
         action = await get_pending_action(session, action_id)
         if action is None:
             await callback.answer("Действие не найдено или уже выполнено", show_alert=True)
             return
         payload = json.loads(action.payload)
-        peer_id = payload["peer_id"]
-        text = payload["text"]
         await delete_pending_action(session, action_id)
+    
+    # Получаем клиент из payload или по умолчанию
+    client_id = payload.get("client_id")
+    if client_id:
+        client = userbot_manager.get_client(client_id)
+    else:
+        client = userbot_manager.get_client(callback.from_user.id)
+    
+    if client is None:
+        await callback.answer("Клиент не найден. Сначала /login", show_alert=True)
+        return
+
+    peer_id = payload["peer_id"]
+    text = payload["text"]
 
     try:
         entity = await client.get_entity(peer_id)

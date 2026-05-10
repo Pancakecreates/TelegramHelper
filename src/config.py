@@ -26,7 +26,8 @@ class Settings(BaseSettings):
     )
 
     bot_token: str = Field(..., description="Токен control-бота из @BotFather")
-    owner_telegram_id: int = Field(..., description="Telegram user_id единственного владельца")
+    owner_telegram_ids: list[int] = Field(..., description="Telegram user_id владельцев через запятую")
+    account_aliases: dict[str, str] = Field(default_factory=dict, description="Алиасы аккаунтов: {'Имя1': '123456789', 'Имя2': '987654321'}")
     encryption_key: str = Field(..., description="Fernet-ключ (base64)")
     database_url: str = Field("sqlite+aiosqlite:///data/app.db")
 

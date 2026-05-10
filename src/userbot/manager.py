@@ -66,6 +66,14 @@ class UserbotManager:
     def get_client(self, telegram_id: int) -> TelegramClient | None:
         return self._clients.get(telegram_id)
 
+    def get_client_by_account_id(self, account_id: str) -> TelegramClient | None:
+        """Получить клиент по ID аккаунта (строка)"""
+        try:
+            account_id_int = int(account_id)
+            return self._clients.get(account_id_int)
+        except (ValueError, TypeError):
+            return None
+
     def register_client(self, telegram_id: int, client: TelegramClient) -> None:
         self._clients[telegram_id] = client
         from src.userbot.auto_reply import attach_auto_reply
