@@ -119,7 +119,7 @@ BOOL_KEYS = {
 }
 
 CHOICE_KEYS = {
-    "llm_provider": {"openai", "gemini"},
+    "llm_provider": {"openai", "gemini", "opencode"},
     "transcription_mode": {"local", "api", "hybrid"},
     "auto_reply_mode": {"static", "smart"},
 }
@@ -337,12 +337,15 @@ async def _render_section(telegram_id: int, section: str) -> tuple[str, InlineKe
         kb.row(*_back_row())
 
     elif section == "llm":
-        active = (
-            LLMDefaults.OPENAI_CHAT_HEAVY if s.use_heavy_model and s.llm_provider == "openai"
-            else LLMDefaults.OPENAI_CHAT_LIGHT if s.llm_provider == "openai"
-            else LLMDefaults.GEMINI_CHAT_HEAVY if s.use_heavy_model
-            else LLMDefaults.GEMINI_CHAT_LIGHT
-        )
+        if s.llm_provider == "opencode":
+            active = "minimax-m2.5-pro" if s.use_heavy_model else "minimax-m2.5-free"
+        else:
+            active = (
+                LLMDefaults.OPENAI_CHAT_HEAVY if s.use_heavy_model and s.llm_provider == "openai"
+                else LLMDefaults.OPENAI_CHAT_LIGHT if s.llm_provider == "openai"
+                else LLMDefaults.GEMINI_CHAT_HEAVY if s.use_heavy_model
+                else LLMDefaults.GEMINI_CHAT_LIGHT
+            )
         text = (
             "🤖 <b>LLM-провайдер</b>\n\n"
             "Кто отвечает на запросы и пишет черновики/саммари. Лёгкая модель — для рутины, "
@@ -425,12 +428,15 @@ async def _render_section(telegram_id: int, section: str) -> tuple[str, InlineKe
         kb.row(*_back_row())
 
     elif section == "keys":
+        opencode_status = "❌" if opencode_key is None else "✅"
+        opencode_display = opencode_key[:30] + "…" if opencode_key and len(opencode_key) > 30 else (opencode_key or "не установлен")
+        
         text = (
             "🔑 <b>API-ключи</b>\n\n"
             "Хранятся зашифрованными (Fernet). Можно перезаписать в любой момент.\n\n"
             f"OpenAI: {_check(bool(openai_key))}\n"
             f"Gemini: {_check(bool(gemini_key))}\n"
-            f"OpenCode: {_check(bool(opencode_key))} (локальный API URL)"
+            f"OpenCode: {opencode_status} ({opencode_display})"
         )
         kb.row(
             InlineKeyboardButton(text="🔑 OpenAI key", callback_data="set:input:openai_key"),
@@ -590,8 +596,15 @@ async def step_opencode_key(message: Message, state: FSMContext) -> None:
     async with get_session() as session:
         owner = await get_or_create_user(session, message.from_user.id)
         await upsert_api_key(session, owner, "opencode", url)
+        
+        # Проверяем, что ключ сохранился правильно
+        saved_key = await get_api_key(session, owner, "opencode")
+        if saved_key == url:
+            await message.answer(f"✅ OpenCode URL сохранён и проверен: <code>{url}</code>")
+        else:
+            await message.answer("⚠️ URL сохранён, но проверка не пройдена. Попробуйте ещё раз.")
+    
     await state.clear()
-    await message.answer(f"✅ OpenCode URL сохранён: <code>{url}</code>")
 
 
 @router.message(SettingsStates.waiting_digest_time)
