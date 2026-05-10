@@ -338,7 +338,7 @@ async def _render_section(telegram_id: int, section: str) -> tuple[str, InlineKe
 
     elif section == "llm":
         if s.llm_provider == "opencode":
-            active = "minimax-m2.5-pro" if s.use_heavy_model else "minimax-m2.5-free"
+            active = LLMDefaults.OPENCODE_CHAT_LIGHT  # OpenCode всегда использует легкую модель
         else:
             active = (
                 LLMDefaults.OPENAI_CHAT_HEAVY if s.use_heavy_model and s.llm_provider == "openai"

@@ -65,7 +65,7 @@ AGENT_SYSTEM = """\
      - "reminder_overdue_enabled"  : true/false
      - "ignore_archived"           : true/false
      - "use_heavy_model"           : true/false
-     - "llm_provider"              : "openai" | "gemini"
+     - "llm_provider"              : "openai" | "gemini" | "opencode"
      - "transcription_mode"        : "local" | "api" | "hybrid"
      - "timezone"                  : IANA (Europe/Moscow и т.п.)
    Используй для фраз: «включи Х», «выключи Х», «дайджест в 7 утра», «часовой пояс Лондон»,

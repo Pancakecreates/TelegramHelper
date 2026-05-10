@@ -7,6 +7,7 @@ from typing import Any
 
 import aiohttp
 
+from src.config import LLMDefaults
 from src.llm.base import ChatMessage, LLMProvider
 
 
@@ -68,7 +69,7 @@ class OpenCodeProvider(LLMProvider):
                     "parts": parts,
                     "model": {
                         "providerID": "opencode",
-                        "modelID": "minimax-m2.5-free" if not heavy else "minimax-m2.5-pro"
+                        "modelID": LLMDefaults.OPENCODE_CHAT_LIGHT  # OpenCode всегда использует легкую модель
                     }
                 }
             )

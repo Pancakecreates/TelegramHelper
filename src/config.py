@@ -17,6 +17,9 @@ class LLMDefaults:
     GEMINI_CHAT_HEAVY = "gemini-3.1-pro"
     GEMINI_EMBED = "text-embedding-004"
 
+    OPENCODE_CHAT_LIGHT = "minimax-m2.5-free"
+    OPENCODE_CHAT_HEAVY = "minimax-m2.5-pro"
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
