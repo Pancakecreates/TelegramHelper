@@ -50,13 +50,14 @@ class OpenCodeProvider(LLMProvider):
             session_data = await session_response.json()
             session_id = session_data["id"]
             
-            # 2. Формируем части сообщения (текст + изображения)
+            # 2. Формируем части сообщения (все роли: system + user)
             parts = []
-            user_text = "\n".join([msg.content for msg in messages if msg.role == "user"])
-            if not user_text:
-                user_text = messages[-1].content if messages else ""
+            for msg in messages:
+                if msg.content:
+                    parts.append({"type": "text", "text": msg.content})
             
-            parts.append({"type": "text", "text": user_text})
+            if not parts:
+                parts.append({"type": "text", "text": messages[-1].content if messages else ""})
             
             # TODO: Добавить поддержку изображений если нужно в будущем
             # Бот может получать фото от пользователя и передавать их в OpenCode
