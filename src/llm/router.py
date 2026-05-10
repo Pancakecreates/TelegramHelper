@@ -12,6 +12,12 @@ async def build_provider(session: AsyncSession, user: User) -> LLMProvider | Non
     """Создаёт провайдер согласно настройкам пользователя. None — если ключ не задан."""
     provider_name = user.settings.llm_provider if user.settings else "openai"
     key = await get_api_key(session, user, provider_name)
+    
+    # Отладочная информация
+    print(f"DEBUG: provider_name={provider_name}, key_exists={key is not None}")
+    if key:
+        print(f"DEBUG: key_length={len(key)}, key_preview={key[:50]}...")
+    
     if not key:
         return None
     if provider_name == "openai":
