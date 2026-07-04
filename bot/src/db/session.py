@@ -57,6 +57,22 @@ async def init_db() -> None:
             await conn.execute(text("ALTER TABLE users ADD COLUMN business_connection_id VARCHAR(128)"))
         except Exception:
             pass  # Уже существует
+        try:
+            await conn.execute(text("ALTER TABLE commitments ADD COLUMN last_reminded_at DATETIME"))
+        except Exception:
+            pass
+        try:
+            await conn.execute(text("ALTER TABLE commitments ADD COLUMN last_reminder_msg_id BIGINT"))
+        except Exception:
+            pass
+        try:
+            await conn.execute(text("ALTER TABLE commitments ADD COLUMN start_at DATETIME"))
+        except Exception:
+            pass
+        try:
+            await conn.execute(text("ALTER TABLE commitments ADD COLUMN start_reminded BOOLEAN DEFAULT 0"))
+        except Exception:
+            pass
         for stmt in _FTS_SETUP:
             await conn.execute(text(stmt))
 

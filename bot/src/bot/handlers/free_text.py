@@ -659,6 +659,7 @@ async def _exec_add_reminder(intent, message, *, tz_name: str) -> None:
     if not text:
         await message.answer("Не понял, о чём напомнить. Уточни.")
         return
+    start_at = _parse_iso_to_utc_naive(intent.get("start_at"))
     when = _parse_iso_to_utc_naive(intent.get("when"))
     peer_query = (intent.get("peer_query") or "").strip()
 
@@ -667,14 +668,14 @@ async def _exec_add_reminder(intent, message, *, tz_name: str) -> None:
     if peer_query:
         from src.userbot.manager import _MANAGER_SINGLETON
         client = _MANAGER_SINGLETON.get_client(message.from_user.id) if _MANAGER_SINGLETON else None
-        if client is not None:
-            from src.core.contact_resolver import resolve
-            async with get_session() as session:
-                owner = await get_or_create_user(session, message.from_user.id)
-            cands = await resolve(client, owner, peer_query)
-            if cands:
-                peer_id = cands[0].peer_id
-                peer_name = cands[0].display_name
+        # Если клиента нет, попробуем разрешить без него
+        from src.core.contact_resolver import resolve
+        async with get_session() as session:
+            owner = await get_or_create_user(session, message.from_user.id)
+        cands = await resolve(client, owner, peer_query)
+        if cands:
+            peer_id = cands[0].peer_id
+            peer_name = cands[0].display_name
 
     async with get_session() as session:
         owner = await get_or_create_user(session, message.from_user.id)
@@ -687,9 +688,18 @@ async def _exec_add_reminder(intent, message, *, tz_name: str) -> None:
             direction="mine",
             text=text,
             deadline_at=when,
+            start_at=start_at,
         )
 
-    when_str = fmt_local(when, tz_name) if when else "без срока"
+    if start_at and when:
+        when_str = f"с {fmt_local(start_at, tz_name)} до {fmt_local(when, tz_name)}"
+    elif start_at:
+        when_str = f"начать в {fmt_local(start_at, tz_name)}"
+    elif when:
+        when_str = f"до {fmt_local(when, tz_name)}"
+    else:
+        when_str = "без срока"
+
     extra = f" (контакт: {peer_name})" if peer_name else ""
     note = "" if owner.settings.reminders_enabled else "\n\n⚠ Напоминания выключены — включи в /settings → ⏰."
     await message.answer(f"⏰ Напоминание добавлено: <b>{text}</b>\nКогда: {when_str}{extra}{note}")

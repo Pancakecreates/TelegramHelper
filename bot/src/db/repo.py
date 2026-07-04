@@ -351,6 +351,7 @@ async def add_commitment(
     direction: str,
     text: str,
     deadline_at: datetime | None,
+    start_at: datetime | None = None,
 ) -> Commitment:
     c = Commitment(
         user_id=user_id,
@@ -360,6 +361,7 @@ async def add_commitment(
         direction=direction,
         text=text,
         deadline_at=deadline_at,
+        start_at=start_at,
     )
     session.add(c)
     await session.flush()
@@ -374,7 +376,7 @@ async def list_open_commitments(
 ) -> list[Commitment]:
     query = select(Commitment).where(
         Commitment.user_id == user.id,
-        Commitment.status == "open",
+        Commitment.status.in_(("open", "reminded")),
     )
     if direction:
         query = query.where(Commitment.direction == direction)

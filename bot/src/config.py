@@ -17,8 +17,8 @@ class LLMDefaults:
     GEMINI_CHAT_HEAVY = "gemini-3.1-pro"
     GEMINI_EMBED = "text-embedding-004"
 
-    OPENCODE_CHAT_LIGHT = "minimax-m2.5-free"
-    OPENCODE_CHAT_HEAVY = "minimax-m2.5-pro"
+    OPENCODE_CHAT_LIGHT = "big-pickle"
+    OPENCODE_CHAT_HEAVY = "big-pickle"
 
 
 class Settings(BaseSettings):
@@ -34,6 +34,10 @@ class Settings(BaseSettings):
     encryption_key: str = Field(..., description="Fernet-ключ (base64)")
     database_url: str = Field("sqlite+aiosqlite:///data/app.db")
     voice_service_url: str = Field("http://localhost:8000", description="URL сервиса транскрипции голоса")
+
+    @property
+    def owner_telegram_id(self) -> int:
+        return self.owner_telegram_ids[0]
 
     @property
     def data_dir(self) -> Path:

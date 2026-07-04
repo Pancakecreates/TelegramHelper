@@ -150,8 +150,12 @@ class Commitment(Base):
     message_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     direction: Mapped[str] = mapped_column(String(8))  # mine | theirs
     text: Mapped[str] = mapped_column(Text)
+    start_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     deadline_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     status: Mapped[str] = mapped_column(String(16), default="open")  # open | done | cancelled | reminded
+    start_reminded: Mapped[bool] = mapped_column(Boolean, default=False)
+    last_reminded_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    last_reminder_msg_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
