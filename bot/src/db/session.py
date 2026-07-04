@@ -50,6 +50,12 @@ _FTS_SETUP = [
 
 
 async def init_db() -> None:
+    if "sqlite" in settings.database_url:
+        from sqlalchemy.engine.url import make_url
+        url = make_url(settings.database_url)
+        if url.database:
+            Path(url.database).parent.mkdir(parents=True, exist_ok=True)
+
     settings.data_dir  # триггерит создание директории
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
