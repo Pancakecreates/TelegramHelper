@@ -202,8 +202,17 @@ async def _make_handler(client: TelegramClient, owner_telegram_id: int):
                     reply_text=reply,
                 )
 
+            import re
+            peer_label = display.strip()
+            if not peer_label or re.match(r'^[\s\u200b\u200c\u200d\u200e\u200f\ufeff]+$', peer_label):
+                peer_label = "Без имени"
+            username = getattr(sender, "username", None)
+            if username:
+                peer_label += f" (@{username})"
+            peer_label += f" [ID: <code>{sender.id}</code>]"
+
             await notifier.notify(
-                f"🤖 <b>Авто-ответ</b> для <b>{display}</b>\n\n"
+                f"🤖 <b>Авто-ответ</b> для <b>{peer_label}</b>\n\n"
                 f"<i>Им:</i> {incoming_text[:200]}\n"
                 f"<i>Я:</i> {reply}",
                 chat_id=owner_telegram_id

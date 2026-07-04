@@ -169,8 +169,16 @@ async def run_auto_reply(message: Message, owner: User, display_name: str, incom
             reply_text=reply,
         )
 
+    import re
+    peer_label = display_name.strip()
+    if not peer_label or re.match(r'^[\s\u200b\u200c\u200d\u200e\u200f\ufeff]+$', peer_label):
+        peer_label = "Без имени"
+    if message.chat.username:
+        peer_label += f" (@{message.chat.username})"
+    peer_label += f" [ID: <code>{message.chat.id}</code>]"
+
     await notifier.notify(
-        f"🤖 <b>Авто-ответ</b> для <b>{display_name}</b>\n\n"
+        f"🤖 <b>Авто-ответ</b> для <b>{peer_label}</b>\n\n"
         f"<i>Им:</i> {incoming_text[:200]}\n"
         f"<i>Я:</i> {reply}",
         chat_id=owner.telegram_id
