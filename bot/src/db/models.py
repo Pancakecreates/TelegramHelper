@@ -155,6 +155,7 @@ class Commitment(Base):
     status: Mapped[str] = mapped_column(String(16), default="open")  # open | done | cancelled | reminded
     start_reminded: Mapped[bool] = mapped_column(Boolean, default=False)
     last_reminded_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    last_start_reminded_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     last_reminder_msg_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 

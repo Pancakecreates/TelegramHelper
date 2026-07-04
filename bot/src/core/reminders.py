@@ -53,8 +53,8 @@ async def _check_once(owner_telegram_id: int) -> None:
 
     # Сначала обрабатываем старт задач
     for c in to_start:
-        if c.last_reminded_at:
-            if now - c.last_reminded_at < timedelta(minutes=5):
+        if c.last_start_reminded_at:
+            if now - c.last_start_reminded_at < timedelta(minutes=5):
                 continue
 
         who = "Я" if c.direction == "mine" else (c.peer_name or "Они")
@@ -90,7 +90,7 @@ async def _check_once(owner_telegram_id: int) -> None:
         async with get_session() as session:
             db_c = await session.get(Commitment, c.id)
             if db_c:
-                db_c.last_reminded_at = now
+                db_c.last_start_reminded_at = now
                 if sent_msg:
                     db_c.last_reminder_msg_id = sent_msg.message_id
 

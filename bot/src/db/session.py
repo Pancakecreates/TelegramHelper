@@ -81,6 +81,10 @@ async def init_db() -> None:
         except Exception:
             pass
         try:
+            await conn.execute(text("ALTER TABLE commitments ADD COLUMN last_start_reminded_at DATETIME"))
+        except Exception:
+            pass
+        try:
             await conn.execute(text("UPDATE user_settings SET timezone = 'Europe/Moscow' WHERE timezone = 'UTC'"))
         except Exception:
             pass

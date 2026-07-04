@@ -218,6 +218,7 @@ async def cb_start_done(callback: CallbackQuery) -> None:
         if c is not None:
             c.start_reminded = True
             c.last_reminded_at = None
+            c.last_start_reminded_at = None
             c.last_reminder_msg_id = None
             
     if callback.message:
@@ -238,6 +239,7 @@ async def cb_postpone_start(callback: CallbackQuery) -> None:
             c.start_at = new_start
             c.start_reminded = False
             c.last_reminded_at = None
+            c.last_start_reminded_at = None
             c.last_reminder_msg_id = None
             if c.deadline_at and c.start_at >= c.deadline_at:
                 c.deadline_at = c.deadline_at + timedelta(minutes=mins)
