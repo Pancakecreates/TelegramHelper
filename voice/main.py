@@ -12,7 +12,7 @@ from pydantic_settings import BaseSettings
 logger = logging.getLogger("voice_service")
 logging.basicConfig(level=logging.INFO)
 
-from ffmpeg_helper import ensure_ffmpeg
+from utils.ffmpeg_helper import ensure_ffmpeg
 ensure_ffmpeg()
 
 class Settings(BaseSettings):
@@ -31,13 +31,13 @@ app = FastAPI(title="TelegramHelper Voice Transcription API")
 
 @app.on_event("startup")
 def startup_event():
-    from tunnel import start_tunnel
+    from utils.tunnel import start_tunnel
     start_tunnel()
 
 
 @app.on_event("shutdown")
 def shutdown_event():
-    from tunnel import stop_tunnel
+    from utils.tunnel import stop_tunnel
     stop_tunnel()
 
 class TranscriptionService:
