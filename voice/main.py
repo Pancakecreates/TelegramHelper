@@ -25,6 +25,18 @@ class Settings(BaseSettings):
 settings = Settings()
 app = FastAPI(title="TelegramHelper Voice Transcription API")
 
+
+@app.on_event("startup")
+def startup_event():
+    from tunnel import start_tunnel
+    start_tunnel()
+
+
+@app.on_event("shutdown")
+def shutdown_event():
+    from tunnel import stop_tunnel
+    stop_tunnel()
+
 class TranscriptionService:
     def __init__(self, model_size: str) -> None:
         self._model_size = model_size

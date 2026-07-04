@@ -1,11 +1,8 @@
 FROM python:3.12-slim
 
-# ffmpeg нужен для голосовых/audio (faster-whisper умеет webm/ogg через ffmpeg)
-# libgomp1 — рантайм OpenMP для ctranslate2 (внутри faster-whisper)
+# ca-certificates и tzdata нужны для безопасных сетевых запросов и временных зон
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-       ffmpeg \
-       libgomp1 \
        ca-certificates \
        tzdata \
     && rm -rf /var/lib/apt/lists/*
