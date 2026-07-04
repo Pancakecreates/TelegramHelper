@@ -213,11 +213,11 @@ async def handle_business_message(message: Message):
 
         is_bot = bool(message.from_user.is_bot) if message.from_user else False
 
-        # Определяем отображаемое имя
-        if message.from_user:
-            parts = [message.from_user.first_name, message.from_user.last_name]
-            display_name = " ".join(p for p in parts if p).strip() or message.from_user.username or str(message.from_user.id)
-            username = message.from_user.username
+        # Определяем отображаемое имя собеседника
+        if peer_kind == "user":
+            parts = [message.chat.first_name, message.chat.last_name]
+            display_name = " ".join(p for p in parts if p).strip() or message.chat.username or str(peer_id)
+            username = message.chat.username
         else:
             display_name = message.chat.title or str(peer_id)
             username = message.chat.username

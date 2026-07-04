@@ -245,8 +245,21 @@ async def cb_catchup(callback: CallbackQuery, userbot_manager: UserbotManager) -
 @router.message(Command("sync"))
 async def cmd_sync(message: Message, userbot_manager: UserbotManager) -> None:
     """Sync метаданные диалогов + фоновый prefetch последних сообщений."""
-    client = await _ensure_client(message, userbot_manager)
+    client = userbot_manager.get_client(message.from_user.id)
     if client is None:
+        async with get_session() as session:
+            owner = await get_or_create_user(session, message.from_user.id)
+        if owner.business_connection_id:
+            await message.answer(
+                "💼 <b>Синхронизация в режиме Telegram Business</b>\n\n"
+                "Официальный Telegram Business API не позволяет боту напрямую запрашивать список контактов или историю старых чатов.\n\n"
+                "<b>Как это работает:</b>\n"
+                "• Бот автоматически сохраняет новые контакты и сообщения <b>в реальном времени</b> по мере того, как вы с ними переписываетесь.\n"
+                "• Чтобы написать человеку через бота первый раз: <b>отправьте ему любое сообщение вручную из вашего Telegram</b>. Бот мгновенно запомнит его в базу, и дальше вы сможете писать ему через бота.\n\n"
+                "<i>💡 Если вам нужна полная синхронизация всей истории и контактов разом — вы можете авторизовать юзербота через <code>/login</code> (для этого потребуются API_ID / API_HASH).</i>"
+            )
+        else:
+            await message.answer("Сначала подключи аккаунт через /login.")
         return
     from src.userbot.dialogs import prefetch_recent_messages, sync_dialogs
 
