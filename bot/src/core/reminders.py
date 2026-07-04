@@ -53,6 +53,10 @@ async def _check_once(owner_telegram_id: int) -> None:
 
     # Сначала обрабатываем старт задач
     for c in to_start:
+        if c.last_reminded_at:
+            if now - c.last_reminded_at < timedelta(minutes=5):
+                continue
+
         who = "Я" if c.direction == "mine" else (c.peer_name or "Они")
         d_str = fmt_local(c.deadline_at, tz_name) if c.deadline_at else "без дедлайна"
         text = (
@@ -60,11 +64,35 @@ async def _check_once(owner_telegram_id: int) -> None:
             f"<b>{who}</b>: {c.text}\n"
             f"Запланировано до: {d_str}"
         )
-        await notifier.notify(text, chat_id=owner_telegram_id)
+
+        kb = InlineKeyboardBuilder()
+        kb.row(
+            InlineKeyboardButton(text="🚀 Начал делать", callback_data=f"todo:start_done:{c.id}"),
+        )
+        kb.row(
+            InlineKeyboardButton(text="⏱ +15м", callback_data=f"todo:postpone_start:{c.id}:15"),
+            InlineKeyboardButton(text="⏱ +1ч", callback_data=f"todo:postpone_start:{c.id}:60"),
+            InlineKeyboardButton(text="⏱ +1д", callback_data=f"todo:postpone_start:{c.id}:1440"),
+        )
+        markup = kb.as_markup()
+
+        if c.last_reminder_msg_id and notifier._bot:
+            try:
+                await notifier._bot.edit_message_reply_markup(
+                    chat_id=owner_telegram_id,
+                    message_id=c.last_reminder_msg_id,
+                    reply_markup=None
+                )
+            except Exception:
+                pass
+
+        sent_msg = await notifier.notify(text, reply_markup=markup, chat_id=owner_telegram_id)
         async with get_session() as session:
             db_c = await session.get(Commitment, c.id)
             if db_c:
-                db_c.start_reminded = True
+                db_c.last_reminded_at = now
+                if sent_msg:
+                    db_c.last_reminder_msg_id = sent_msg.message_id
 
     if not active_commitments:
         return

@@ -208,3 +208,46 @@ async def cb_postpone(callback: CallbackQuery) -> None:
             callback.message.html_text + f"\n\n⏱ Перенесено на {mins} мин (до {d_str})"
         )
     await callback.answer(f"Перенесено на {mins} минут")
+
+
+@router.callback_query(F.data.startswith("todo:start_done:"))
+async def cb_start_done(callback: CallbackQuery) -> None:
+    cid = int(callback.data.split(":")[2])
+    async with get_session() as session:
+        c = await session.get(Commitment, cid)
+        if c is not None:
+            c.start_reminded = True
+            c.last_reminded_at = None
+            c.last_reminder_msg_id = None
+            
+    if callback.message:
+        await callback.message.edit_text(callback.message.html_text + "\n\n🚀 Начал делать!")
+    await callback.answer("Удачной работы!")
+
+
+@router.callback_query(F.data.startswith("todo:postpone_start:"))
+async def cb_postpone_start(callback: CallbackQuery) -> None:
+    parts = callback.data.split(":")
+    cid = int(parts[2])
+    mins = int(parts[3])
+    new_start = datetime.utcnow() + timedelta(minutes=mins)
+    
+    async with get_session() as session:
+        c = await session.get(Commitment, cid)
+        if c is not None:
+            c.start_at = new_start
+            c.start_reminded = False
+            c.last_reminded_at = None
+            c.last_reminder_msg_id = None
+            if c.deadline_at and c.start_at >= c.deadline_at:
+                c.deadline_at = c.deadline_at + timedelta(minutes=mins)
+                
+    if callback.message:
+        async with get_session() as session:
+            owner = await get_or_create_user(session, callback.from_user.id)
+            tz_name = owner.settings.timezone
+        s_str = fmt_local(new_start, tz_name)
+        await callback.message.edit_text(
+            callback.message.html_text + f"\n\n⏱ Старт перенесен на {mins} мин (до {s_str})"
+        )
+    await callback.answer(f"Старт перенесен на {mins} минут")
