@@ -148,7 +148,7 @@ async def build_digest(owner_telegram_id: int) -> str:
 
 async def send_digest(owner_telegram_id: int) -> None:
     text = await build_digest(owner_telegram_id)
-    await notifier.notify(text)
+    await notifier.notify(text, chat_id=owner_telegram_id)
 
 
 async def digest_scheduler_loop() -> None:

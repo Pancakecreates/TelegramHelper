@@ -60,7 +60,7 @@ async def _check_once(owner_telegram_id: int) -> None:
             f"<b>{who}</b>: {c.text}\n"
             f"Запланировано до: {d_str}"
         )
-        await notifier.notify(text)
+        await notifier.notify(text, chat_id=owner_telegram_id)
         async with get_session() as session:
             db_c = await session.get(Commitment, c.id)
             if db_c:
@@ -131,7 +131,7 @@ async def _check_once(owner_telegram_id: int) -> None:
                 pass  # Старое сообщение могло быть удалено пользователем
 
         # Отправляем новое напоминание
-        sent_msg = await notifier.notify(text, reply_markup=markup)
+        sent_msg = await notifier.notify(text, reply_markup=markup, chat_id=owner_telegram_id)
         
         # Обновляем состояние обязательства в БД
         async with get_session() as session:

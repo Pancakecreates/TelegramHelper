@@ -196,14 +196,15 @@ async def news_scheduler_loop() -> None:
                     logger.warning("news scheduler: no userbot client for owner %s", owner_id)
                 else:
                     await notifier.notify(
-                        f"📰 <b>Авто-новости</b> · {len(topics_to_run)} тем(ы)…"
+                        f"📰 <b>Авто-новости</b> · {len(topics_to_run)} тем(ы)…",
+                        chat_id=owner_id
                     )
                     for topic, hours in topics_to_run:
                         try:
                             text = await build_news_digest(
                                 client, owner_id, topic, hours=hours,
                             )
-                            await notifier.notify(f"<b>«{topic}»</b>\n\n{text}")
+                            await notifier.notify(f"<b>«{topic}»</b>\n\n{text}", chat_id=owner_id)
                         except Exception:
                             logger.exception("news topic failed: %s", topic)
         except Exception:

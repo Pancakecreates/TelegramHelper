@@ -21,13 +21,14 @@ class Notifier:
     def attach(self, bot: "Bot") -> None:
         self._bot = bot
 
-    async def notify(self, text: str, *, parse_mode: str | None = "HTML", reply_markup = None) -> "Message | None":
+    async def notify(self, text: str, *, chat_id: int | None = None, parse_mode: str | None = "HTML", reply_markup = None) -> "Message | None":
         if self._bot is None:
             logger.warning("Notifier not attached, dropping message: %s", text[:80])
             return None
+        target_id = chat_id or settings.owner_telegram_id
         try:
             return await self._bot.send_message(
-                chat_id=settings.owner_telegram_id,
+                chat_id=target_id,
                 text=text,
                 parse_mode=parse_mode,
                 reply_markup=reply_markup,

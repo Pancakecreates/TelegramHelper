@@ -205,7 +205,8 @@ async def _make_handler(client: TelegramClient, owner_telegram_id: int):
             await notifier.notify(
                 f"🤖 <b>Авто-ответ</b> для <b>{display}</b>\n\n"
                 f"<i>Им:</i> {incoming_text[:200]}\n"
-                f"<i>Я:</i> {reply}"
+                f"<i>Я:</i> {reply}",
+                chat_id=owner_telegram_id
             )
         except Exception:
             logger.exception("auto-reply handler failed")
