@@ -176,14 +176,15 @@ async def run_auto_reply(message: Message, owner: User, display_name: str, incom
 
 @router.business_connection()
 async def handle_business_connection(connection: BusinessConnection):
+    logger.warning("!!! BUSINESS CONNECTION EVENT: user_id=%s, conn_id=%s, is_enabled=%s", connection.user.id, connection.id, connection.is_enabled)
     async with get_session() as session:
         owner = await get_or_create_user(session, connection.user.id)
         if connection.is_enabled:
             owner.business_connection_id = connection.id
-            logger.info("Business connection enabled for user %s, ID: %s", connection.user.id, connection.id)
+            logger.warning("!!! Saved business_connection_id=%s for user_id=%s in DB", connection.id, connection.user.id)
         else:
             owner.business_connection_id = None
-            logger.info("Business connection disabled for user %s", connection.user.id)
+            logger.warning("!!! Cleared business_connection_id for user_id=%s in DB", connection.user.id)
 
 @router.business_message()
 async def handle_business_message(message: Message):

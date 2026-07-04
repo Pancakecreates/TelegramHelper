@@ -38,6 +38,11 @@ async def run_bot(userbot_manager: UserbotManager) -> None:
 
     dp = Dispatcher(storage=MemoryStorage())
 
+    @dp.update.outer_middleware()
+    async def log_update_middleware(handler, event, data):
+        logger.warning("=== INCOMING UPDATE: type=%s ===", event.event_type)
+        return await handler(event, data)
+
     dp["userbot_manager"] = userbot_manager
 
     dp.include_router(start.router)
