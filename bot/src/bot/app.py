@@ -60,6 +60,13 @@ async def run_bot(userbot_manager: UserbotManager) -> None:
     logger.info("Control bot started as @%s", me.username)
 
     try:
-        await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
+        allowed_updates = dp.resolve_used_update_types()
+        # Гарантируем получение бизнес-событий в любых версиях aiogram
+        business_updates = ["business_connection", "business_message", "edited_business_message", "deleted_business_message"]
+        for bu in business_updates:
+            if bu not in allowed_updates:
+                allowed_updates.append(bu)
+                
+        await dp.start_polling(bot, allowed_updates=allowed_updates)
     finally:
         await bot.session.close()
