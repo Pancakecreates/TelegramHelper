@@ -24,8 +24,17 @@ router.callback_query.filter(OwnerOnly())
 
 def _format(c, tz_name: str) -> str:
     who = "Я" if c.direction == "mine" else (c.peer_name or "Они")
-    deadline = fmt_local(c.deadline_at, tz_name)
-    return f"<b>{who}</b> · {c.text} (до {deadline})"
+    if c.start_at and c.deadline_at:
+        start = fmt_local(c.start_at, tz_name)
+        deadline = fmt_local(c.deadline_at, tz_name)
+        return f"<b>{who}</b> · {c.text} (с {start} до {deadline})"
+    elif c.start_at:
+        start = fmt_local(c.start_at, tz_name)
+        return f"<b>{who}</b> · {c.text} (старт {start})"
+    elif c.deadline_at:
+        deadline = fmt_local(c.deadline_at, tz_name)
+        return f"<b>{who}</b> · {c.text} (до {deadline})"
+    return f"<b>{who}</b> · {c.text} (без срока)"
 
 
 def fmt_time_only(dt: datetime, tz_name: str) -> str:
