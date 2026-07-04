@@ -172,41 +172,41 @@ async def build_news_digest(
 async def news_scheduler_loop() -> None:
     last_sent: dict[int, str] = {}
     while True:
-        try:
-            owner_id = app_settings.owner_telegram_ids[0]
-            topics_to_run: list[tuple[str, int]] = []
-            async with get_session() as session:
-                owner = await get_or_create_user(session, owner_id)
-                tz_name = owner.settings.timezone
-                target_hm = owner.settings.news_digest_time
-                enabled = owner.settings.news_enabled
-                if enabled:
-                    local_now = now_in_tz(tz_name)
-                    current_hm = local_now.strftime("%H:%M")
-                    current_day = local_now.strftime("%Y-%m-%d")
-                    if target_hm == current_hm and last_sent.get(owner_id) != current_day:
-                        topics = await list_news_topics(session, owner, only_enabled=True)
-                        topics_to_run = [(t.topic, t.hours) for t in topics]
-                        last_sent[owner_id] = current_day  # помечаем даже если тем нет
+        for owner_id in app_settings.owner_telegram_ids:
+            try:
+                topics_to_run: list[tuple[str, int]] = []
+                async with get_session() as session:
+                    owner = await get_or_create_user(session, owner_id)
+                    tz_name = owner.settings.timezone
+                    target_hm = owner.settings.news_digest_time
+                    enabled = owner.settings.news_enabled
+                    if enabled:
+                        local_now = now_in_tz(tz_name)
+                        current_hm = local_now.strftime("%H:%M")
+                        current_day = local_now.strftime("%Y-%m-%d")
+                        if target_hm == current_hm and last_sent.get(owner_id) != current_day:
+                            topics = await list_news_topics(session, owner, only_enabled=True)
+                            topics_to_run = [(t.topic, t.hours) for t in topics]
+                            last_sent[owner_id] = current_day  # помечаем даже если тем нет
 
-            if topics_to_run:
-                from src.userbot.manager import _MANAGER_SINGLETON
-                client = _MANAGER_SINGLETON.get_client(owner_id) if _MANAGER_SINGLETON else None
-                if client is None:
-                    logger.warning("news scheduler: no userbot client for owner %s", owner_id)
-                else:
-                    await notifier.notify(
-                        f"📰 <b>Авто-новости</b> · {len(topics_to_run)} тем(ы)…",
-                        chat_id=owner_id
-                    )
-                    for topic, hours in topics_to_run:
-                        try:
-                            text = await build_news_digest(
-                                client, owner_id, topic, hours=hours,
-                            )
-                            await notifier.notify(f"<b>«{topic}»</b>\n\n{text}", chat_id=owner_id)
-                        except Exception:
-                            logger.exception("news topic failed: %s", topic)
-        except Exception:
-            logger.exception("news scheduler tick failed")
+                if topics_to_run:
+                    from src.userbot.manager import _MANAGER_SINGLETON
+                    client = _MANAGER_SINGLETON.get_client(owner_id) if _MANAGER_SINGLETON else None
+                    if client is None:
+                        logger.warning("news scheduler: no userbot client for owner %s", owner_id)
+                    else:
+                        await notifier.notify(
+                            f"📰 <b>Авто-новости</b> · {len(topics_to_run)} тем(ы)…",
+                            chat_id=owner_id
+                        )
+                        for topic, hours in topics_to_run:
+                            try:
+                                text = await build_news_digest(
+                                    client, owner_id, topic, hours=hours,
+                                )
+                                await notifier.notify(f"<b>«{topic}»</b>\n\n{text}", chat_id=owner_id)
+                            except Exception:
+                                logger.exception("news topic failed: %s", topic)
+            except Exception:
+                logger.exception("news scheduler tick failed for owner %s", owner_id)
         await asyncio.sleep(60)

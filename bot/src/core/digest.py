@@ -157,19 +157,19 @@ async def digest_scheduler_loop() -> None:
     import asyncio
     last_sent: dict[int, str] = {}  # telegram_id -> "YYYY-MM-DD"
     while True:
-        try:
-            owner_id = app_settings.owner_telegram_ids[0]
-            async with get_session() as session:
-                owner = await get_or_create_user(session, owner_id)
-                tz_name = owner.settings.timezone
-                enabled = owner.settings.digest_enabled
-                target_hm = owner.settings.digest_time
-            local_now = now_in_tz(tz_name)
-            current_hm = local_now.strftime("%H:%M")
-            current_day = local_now.strftime("%Y-%m-%d")
-            if enabled and target_hm == current_hm and last_sent.get(owner_id) != current_day:
-                await send_digest(owner_id)
-                last_sent[owner_id] = current_day
-        except Exception:
-            logger.exception("digest scheduler tick failed")
+        for owner_id in app_settings.owner_telegram_ids:
+            try:
+                async with get_session() as session:
+                    owner = await get_or_create_user(session, owner_id)
+                    tz_name = owner.settings.timezone
+                    enabled = owner.settings.digest_enabled
+                    target_hm = owner.settings.digest_time
+                local_now = now_in_tz(tz_name)
+                current_hm = local_now.strftime("%H:%M")
+                current_day = local_now.strftime("%Y-%m-%d")
+                if enabled and target_hm == current_hm and last_sent.get(owner_id) != current_day:
+                    await send_digest(owner_id)
+                    last_sent[owner_id] = current_day
+            except Exception:
+                logger.exception("digest scheduler tick failed for owner %s", owner_id)
         await asyncio.sleep(60)

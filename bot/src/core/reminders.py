@@ -145,8 +145,9 @@ async def _check_once(owner_telegram_id: int) -> None:
 
 async def reminders_loop() -> None:
     while True:
-        try:
-            await _check_once(app_settings.owner_telegram_ids[0])
-        except Exception:
-            logger.exception("reminders tick failed")
+        for owner_id in app_settings.owner_telegram_ids:
+            try:
+                await _check_once(owner_id)
+            except Exception:
+                logger.exception("reminders tick failed for owner %s", owner_id)
         await asyncio.sleep(10)  # Проверяем каждые 10 секунд

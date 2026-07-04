@@ -19,15 +19,16 @@ async def auto_sync_loop() -> None:
     from src.userbot.manager import _MANAGER_SINGLETON  # отложенный импорт против цикла
 
     while True:
-        try:
-            manager = _MANAGER_SINGLETON
-            if manager is not None:
-                client = manager.get_client(app_settings.owner_telegram_ids[0])
-                if client is not None:
-                    async with get_session() as session:
-                        owner = await get_or_create_user(session, app_settings.owner_telegram_ids[0])
-                    stats = await sync_dialogs(client, owner, limit=500)
-                    logger.info("auto-sync done: %s", stats)
-        except Exception:
-            logger.exception("auto-sync tick failed")
+        for owner_id in app_settings.owner_telegram_ids:
+            try:
+                manager = _MANAGER_SINGLETON
+                if manager is not None:
+                    client = manager.get_client(owner_id)
+                    if client is not None:
+                        async with get_session() as session:
+                            owner = await get_or_create_user(session, owner_id)
+                        stats = await sync_dialogs(client, owner, limit=500)
+                        logger.info("auto-sync done for owner %s: %s", owner_id, stats)
+            except Exception:
+                logger.exception("auto-sync tick failed for owner %s", owner_id)
         await asyncio.sleep(AUTO_SYNC_SECONDS)
