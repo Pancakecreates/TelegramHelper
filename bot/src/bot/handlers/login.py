@@ -59,12 +59,9 @@ async def cmd_logout(message: Message, userbot_manager: UserbotManager) -> None:
 @router.message(Command("login"))
 async def cmd_login(message: Message) -> None:
     me = await message.bot.get_me()
-    logger.warning("=== DEBUG LOGIN COMMAND ===")
-    logger.warning("Message from user: id=%s, username=%s", message.from_user.id, message.from_user.username)
     async with get_session() as session:
         owner = await get_or_create_user(session, message.from_user.id)
         conn_id = owner.business_connection_id
-        logger.warning("Database User record: id=%s, telegram_id=%s, business_connection_id=%s", owner.id, owner.telegram_id, owner.business_connection_id)
         
     status_str = f"🟢 <b>Подключено</b> (ID связи: <code>{conn_id}</code>)" if conn_id else "🔴 <b>Не подключено</b>"
     
@@ -78,24 +75,6 @@ async def cmd_login(message: Message) -> None:
         f"3. Введите юзернейм этого бота: <code>@{me.username}</code>.\n"
         "4. Свяжите бота с вашим аккаунтом.\n\n"
         "⚠️ <b>ВАЖНО:</b> Если вы привязали бота, но статус показывает «Не подключено» — пожалуйста, <b>отвяжите бота в настройках Telegram и привяжите заново</b> при запущенном боте. Это заставит Telegram отправить боту нужный ключ подключения."
-    )
-
-
-@router.message(Command("dbdebug"))
-async def cmd_dbdebug(message: Message) -> None:
-    from sqlalchemy import select
-    from src.db.models import User
-    async with get_session() as session:
-        result = await session.execute(select(User))
-        users = list(result.scalars().all())
-    
-    lines = []
-    for u in users:
-        lines.append(f"• ID: {u.id} | TG: <code>{u.telegram_id}</code> | Conn: <code>{u.business_connection_id}</code>")
-        
-    await message.answer(
-        "📊 <b>Отладка Базы Данных на Сервере:</b>\n\n" +
-        ("\n".join(lines) if lines else "Нет пользователей в БД")
     )
 
 

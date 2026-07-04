@@ -49,18 +49,14 @@ def _actions_keyboard(peer_id: int) -> InlineKeyboardMarkup:
     return kb.as_markup()
 
 
-async def _ensure_client(message: Message, userbot_manager: UserbotManager):
-    client = userbot_manager.get_client(message.from_user.id)
-    if client is None:
-        await message.answer("Сначала подключи аккаунт через /login.")
-        return None
-    return client
-
-
 @router.message(Command("chat"))
 async def cmd_chat(message: Message, command: CommandObject, userbot_manager: UserbotManager) -> None:
-    client = await _ensure_client(message, userbot_manager)
-    if client is None:
+    async with get_session() as session:
+        owner = await get_or_create_user(session, message.from_user.id)
+
+    client = userbot_manager.get_client(message.from_user.id)
+    if client is None and not owner.business_connection_id:
+        await message.answer("Сначала подключи аккаунт через /login.")
         return
 
     query = (command.args or "").strip()
@@ -68,12 +64,9 @@ async def cmd_chat(message: Message, command: CommandObject, userbot_manager: Us
         await message.answer("Использование: <code>/chat имя или @username</code>")
         return
 
-    async with get_session() as session:
-        owner = await get_or_create_user(session, message.from_user.id)
-
     candidates = await resolve(client, owner, query)
     if not candidates:
-        await message.answer("Не нашёл такого контакта. Уточни имя/ник или попробуй /sync.")
+        await message.answer("Не нашёл такого контакта. Уточни имя/ник или напиши ему с личного аккаунта.")
         return
 
     if len(candidates) == 1 or candidates[0].score >= 90:
@@ -83,6 +76,30 @@ async def cmd_chat(message: Message, command: CommandObject, userbot_manager: Us
     await message.answer(
         "Кого из них ты имел в виду?",
         reply_markup=_candidates_keyboard("pick", candidates),
+    )
+
+
+@router.message(Command("contacts"))
+async def cmd_contacts(message: Message) -> None:
+    async with get_session() as session:
+        owner = await get_or_create_user(session, message.from_user.id)
+        from src.db.repo import list_contacts
+        contacts = await list_contacts(session, owner)
+        
+    if not contacts:
+        await message.answer("В базе данных ещё нет сохранённых контактов.")
+        return
+        
+    lines = []
+    for c in contacts[:50]:
+        label = f"<b>{c.display_name}</b>"
+        if c.username:
+            label += f" (@{c.username})"
+        lines.append(f"• {label} (ID: <code>{c.peer_id}</code>)")
+        
+    await message.answer(
+        f"👥 <b>Сохранённые контакты ({len(contacts)}):</b>\n\n" +
+        "\n".join(lines)
     )
 
 
@@ -117,8 +134,11 @@ async def cb_pick(callback: CallbackQuery, userbot_manager: UserbotManager) -> N
 
 async def _action_load(callback: CallbackQuery, userbot_manager: UserbotManager, peer_id: int):
     """Готовит данные для действий: client, owner, contact, messages, provider."""
+    async with get_session() as session:
+        owner = await get_or_create_user(session, callback.from_user.id)
+
     client = userbot_manager.get_client(callback.from_user.id)
-    if client is None:
+    if client is None and not owner.business_connection_id:
         await callback.answer("Подключи аккаунт через /login", show_alert=True)
         return None
 
@@ -135,7 +155,7 @@ async def _action_load(callback: CallbackQuery, userbot_manager: UserbotManager,
 
     if contact is None:
         if callback.message:
-            await callback.message.edit_text("Контакт не найден в локальной БД. Попробуй /sync.")
+            await callback.message.edit_text("Контакт не найден в локальной БД.")
         return None
     if provider is None:
         if callback.message:
