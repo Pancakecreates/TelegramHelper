@@ -32,6 +32,8 @@ def _media_dir(owner_telegram_id: int) -> Path:
 def _classify(msg: TgMessage) -> str:
     if msg.voice:
         return "voice"
+    if msg.video_note:
+        return "video_note"
     if msg.audio:
         return "audio"
     if msg.document:
@@ -81,9 +83,10 @@ async def _process_one(
     extracted: str | None = None
     media_path: str | None = None
 
-    if kind in {"voice", "audio"} and transcribe:
+    if kind in {"voice", "audio", "video_note"} and transcribe:
         try:
-            target = media_root / f"{peer_id}_{msg.id}.ogg"
+            ext = getattr(msg.file, "ext", None) or (".mp4" if kind == "video_note" else ".ogg")
+            target = media_root / f"{peer_id}_{msg.id}{ext}"
             await msg.download_media(file=str(target))
             media_path = str(target)
             file_id = str(getattr(msg.file, "id", None) or f"{peer_id}:{msg.id}")
@@ -149,7 +152,7 @@ async def _cached_count(owner_id: int, peer_id: int) -> int:
 
 
 async def load_chat(
-    client: TelegramClient,
+    client: TelegramClient | None,
     owner_telegram_id: int,
     peer_id: int,
     *,
@@ -158,6 +161,11 @@ async def load_chat(
     parse_docs: bool = False,
     incremental: bool = True,
 ) -> list[Message]:
+    if client is None:
+        async with get_session() as session:
+            owner = await get_or_create_user(session, owner_telegram_id)
+            return await fetch_chat_messages(session, owner, peer_id, limit=limit)
+
     # incremental: если в БД достаточно сообщений, тянем только новее последнего
     async with get_session() as session:
         owner = await get_or_create_user(session, owner_telegram_id)
@@ -210,14 +218,14 @@ async def _backfill_transcripts(
     openai_key: str | None,
     transcription_mode: str,
 ) -> None:
-    # mirror кладёт voice/audio без transcript — здесь догоняем транскрипцию ленически
+    # mirror кладёт voice/audio/video_note без transcript — здесь догоняем транскрипцию ленически
     async with get_session() as session:
         result = await session.execute(
             select(Message)
             .where(
                 Message.user_id == owner_id,
                 Message.peer_id == peer_id,
-                Message.kind.in_(("voice", "audio")),
+                Message.kind.in_(("voice", "audio", "video_note")),
                 Message.transcript.is_(None),
             )
             .order_by(Message.date.desc())
@@ -233,7 +241,8 @@ async def _backfill_transcripts(
             tg_msg = await client.get_messages(peer_id, ids=m.message_id)
             if tg_msg is None:
                 continue
-            target = media_root / f"{peer_id}_{m.message_id}.ogg"
+            ext = getattr(tg_msg.file, "ext", None) or (".mp4" if m.kind == "video_note" else ".ogg")
+            target = media_root / f"{peer_id}_{m.message_id}{ext}"
             await tg_msg.download_media(file=str(target))
             file_id = str(getattr(tg_msg.file, "id", None) or f"{peer_id}:{m.message_id}")
             transcript = await transcription_service.transcribe(

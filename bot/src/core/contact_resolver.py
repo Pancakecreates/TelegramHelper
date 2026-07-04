@@ -33,7 +33,7 @@ def _searchable(c: Contact) -> str:
 
 
 async def resolve(
-    client: TelegramClient,
+    client: TelegramClient | None,
     user: User,
     query: str,
     *,
@@ -46,7 +46,7 @@ async def resolve(
     async with get_session() as session:
         contacts = await list_contacts(session, user, kinds=kinds, include_bots=include_bots)
 
-    if not contacts:
+    if not contacts and client is not None:
         await sync_dialogs(client, user)
         async with get_session() as session:
             contacts = await list_contacts(session, user, kinds=kinds, include_bots=include_bots)

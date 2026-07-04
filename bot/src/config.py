@@ -33,6 +33,7 @@ class Settings(BaseSettings):
     account_aliases: dict[str, str] = Field(default_factory=dict, description="Алиасы аккаунтов: {'Имя1': '123456789', 'Имя2': '987654321'}")
     encryption_key: str = Field(..., description="Fernet-ключ (base64)")
     database_url: str = Field("sqlite+aiosqlite:///data/app.db")
+    voice_service_url: str = Field("http://localhost:8000", description="URL сервиса транскрипции голоса")
 
     @property
     def data_dir(self) -> Path:

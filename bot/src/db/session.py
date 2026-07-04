@@ -53,6 +53,10 @@ async def init_db() -> None:
     settings.data_dir  # триггерит создание директории
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        try:
+            await conn.execute(text("ALTER TABLE users ADD COLUMN business_connection_id VARCHAR(128)"))
+        except Exception:
+            pass  # Уже существует
         for stmt in _FTS_SETUP:
             await conn.execute(text(stmt))
 

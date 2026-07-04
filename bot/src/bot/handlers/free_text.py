@@ -561,7 +561,7 @@ async def free_text(
     await _process_text(raw, message, state, userbot_manager)
 
 
-@router.message(F.voice | F.audio)
+@router.message(F.voice | F.audio | F.video_note)
 async def free_voice(
     message: Message,
     state: FSMContext,
@@ -570,7 +570,7 @@ async def free_voice(
     if await state.get_state() is not None:
         return
 
-    media = message.voice or message.audio
+    media = message.voice or message.audio or message.video_note
     if media is None:
         return
 
@@ -581,7 +581,8 @@ async def free_voice(
 
     media_dir = app_settings.data_dir / "media" / "control_bot"
     media_dir.mkdir(parents=True, exist_ok=True)
-    target = media_dir / f"{message.message_id}_{media.file_unique_id}.ogg"
+    ext = ".mp4" if message.video_note else ".ogg"
+    target = media_dir / f"{message.message_id}_{media.file_unique_id}{ext}"
 
     notice = await message.answer("🎙 Слушаю… (транскрибирую)")
     try:

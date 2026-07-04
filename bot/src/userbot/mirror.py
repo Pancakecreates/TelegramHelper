@@ -19,6 +19,8 @@ logger = logging.getLogger(__name__)
 def _classify(msg: TgMessage) -> str:
     if msg.voice:
         return "voice"
+    if msg.video_note:
+        return "video_note"
     if msg.audio:
         return "audio"
     if msg.document:

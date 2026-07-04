@@ -1,0 +1,16 @@
+services:
+  voice-service:
+    build: .
+    container_name: telegram-voice-service
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      - ./cache:/app/cache
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"

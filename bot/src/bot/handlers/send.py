@@ -292,29 +292,43 @@ async def cb_confirm(callback: CallbackQuery, userbot_manager: UserbotManager) -
         payload = json.loads(action.payload)
         await delete_pending_action(session, action_id)
     
-    # Получаем клиент из payload или по умолчанию
-    client_id = payload.get("client_id")
-    if client_id:
-        client = userbot_manager.get_client(client_id)
-    else:
-        client = userbot_manager.get_client(callback.from_user.id)
-    
-    if client is None:
-        await callback.answer("Клиент не найден. Сначала /login", show_alert=True)
-        return
+    # Получаем бизнес-подключение владельца
+    owner_telegram_id = client_id or callback.from_user.id
+    async with get_session() as session:
+        user = await get_or_create_user(session, owner_telegram_id)
+        business_conn_id = user.business_connection_id
 
     peer_id = payload["peer_id"]
     text = payload["text"]
 
-    try:
-        entity = await client.get_entity(peer_id)
-        await client.send_message(entity, text)
-    except Exception as e:
-        logger.exception("send_message failed")
-        await callback.answer("Ошибка при отправке", show_alert=True)
-        if callback.message:
-            await callback.message.edit_text(f"❌ Не удалось отправить: <code>{e}</code>")
-        return
+    if business_conn_id:
+        try:
+            await callback.bot.send_message(
+                chat_id=peer_id,
+                text=text,
+                business_connection_id=business_conn_id
+            )
+        except Exception as e:
+            logger.exception("business send_message failed")
+            await callback.answer("Ошибка при отправке через Бизнес", show_alert=True)
+            if callback.message:
+                await callback.message.edit_text(f"❌ Не удалось отправить: <code>{e}</code>")
+            return
+    else:
+        client = userbot_manager.get_client(owner_telegram_id)
+        if client is None:
+            await callback.answer("Подключите Telegram Business в настройках Telegram или выполните /login", show_alert=True)
+            return
+
+        try:
+            entity = await client.get_entity(peer_id)
+            await client.send_message(entity, text)
+        except Exception as e:
+            logger.exception("send_message failed")
+            await callback.answer("Ошибка при отправке", show_alert=True)
+            if callback.message:
+                await callback.message.edit_text(f"❌ Не удалось отправить: <code>{e}</code>")
+            return
 
     if callback.message:
         await callback.message.edit_text("✅ Сообщение отправлено.")

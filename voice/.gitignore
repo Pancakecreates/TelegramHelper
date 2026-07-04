@@ -1,0 +1,13 @@
+# Environments
+.env
+
+# Model cache and temporary files
+cache/
+temp/
+
+# Python caching
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/

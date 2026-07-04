@@ -52,29 +52,21 @@ async def cmd_logout(message: Message, userbot_manager: UserbotManager) -> None:
     async with get_session() as session:
         user = await get_or_create_user(session, tg_id)
         await delete_telegram_session(session, user)
-    await message.answer("✅ Сессия удалена. Чтобы подключиться заново — /login.")
+        user.business_connection_id = None
+    await message.answer("✅ Бизнес-подключение и сессия удалены. Чтобы подключить заново — /login.")
 
 
 @router.message(Command("login"))
-async def cmd_login(message: Message, state: FSMContext, userbot_manager: UserbotManager) -> None:
-    tg_id = message.from_user.id
-
-    async with get_session() as session:
-        user = await get_or_create_user(session, tg_id)
-        existing = await load_telegram_session(session, user)
-
-    if existing is not None and userbot_manager.get_client(tg_id) is not None:
-        await message.answer(
-            "Аккаунт уже подключён. Сначала выполни /logout, если хочешь подключить другой."
-        )
-        return
-
-    await state.set_state(LoginStates.api_id)
+async def cmd_login(message: Message) -> None:
+    me = await message.bot.get_me()
     await message.answer(
-        "🔐 <b>Подключение Telegram-аккаунта</b>\n\n"
-        "Получи <code>api_id</code> и <code>api_hash</code> на https://my.telegram.org → API development tools.\n"
-        "Никому их не отправляй, кроме этого бота. Я храню их в зашифрованном виде.\n\n"
-        f"Введи <b>api_id</b> (число).\n{CANCEL_HINT}"
+        "💼 <b>Подключение Telegram Business</b>\n\n"
+        "Чтобы подключить этого бота к вашему бизнес-аккаунту:\n"
+        "1. Перейдите в <b>Настройки Telegram</b> личного аккаунта.\n"
+        "2. Откройте раздел <b>Telegram Business</b> -> <b>Чат-боты</b> (или <b>Bots</b>).\n"
+        f"3. Введите юзернейм этого бота: <code>@{me.username}</code>.\n"
+        "4. Свяжите бота с вашим аккаунтом.\n\n"
+        "<i>После этого бот автоматически начнет обрабатывать ваши сообщения в реальном времени.</i>"
     )
 
 

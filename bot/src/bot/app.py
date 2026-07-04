@@ -6,6 +6,7 @@ from aiogram.enums import ParseMode
 from aiogram.fsm.storage.memory import MemoryStorage
 
 from src.bot.handlers import (
+    business,
     catchup_cmd,
     chat_cmd,
     digest_cmd,
@@ -41,6 +42,7 @@ async def run_bot(userbot_manager: UserbotManager) -> None:
 
     dp.include_router(start.router)
     dp.include_router(login.router)
+    dp.include_router(business.router)
     dp.include_router(settings_handlers.router)
     dp.include_router(chat_cmd.router)
     dp.include_router(catchup_cmd.router)
