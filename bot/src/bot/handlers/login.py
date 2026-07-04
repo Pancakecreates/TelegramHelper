@@ -81,6 +81,24 @@ async def cmd_login(message: Message) -> None:
     )
 
 
+@router.message(Command("dbdebug"))
+async def cmd_dbdebug(message: Message) -> None:
+    from sqlalchemy import select
+    from src.db.models import User
+    async with get_session() as session:
+        result = await session.execute(select(User))
+        users = list(result.scalars().all())
+    
+    lines = []
+    for u in users:
+        lines.append(f"• ID: {u.id} | TG: <code>{u.telegram_id}</code> | Conn: <code>{u.business_connection_id}</code>")
+        
+    await message.answer(
+        "📊 <b>Отладка Базы Данных на Сервере:</b>\n\n" +
+        ("\n".join(lines) if lines else "Нет пользователей в БД")
+    )
+
+
 @router.message(LoginStates.api_id)
 async def step_api_id(message: Message, state: FSMContext) -> None:
     text = (message.text or "").strip()
