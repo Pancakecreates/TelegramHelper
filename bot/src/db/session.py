@@ -80,6 +80,11 @@ async def init_db() -> None:
             await conn.execute(text("ALTER TABLE commitments ADD COLUMN start_reminded BOOLEAN DEFAULT 0"))
         except Exception:
             pass
+        try:
+            await conn.execute(text("UPDATE user_settings SET timezone = 'Europe/Moscow' WHERE timezone = 'UTC'"))
+        except Exception:
+            pass
+
         for stmt in _FTS_SETUP:
             await conn.execute(text(stmt))
 

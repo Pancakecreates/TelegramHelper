@@ -45,7 +45,7 @@ class UserSettings(Base):
     auto_reply_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
     llm_provider: Mapped[str] = mapped_column(String(16), default="openai")
     use_heavy_model: Mapped[bool] = mapped_column(Boolean, default=False)
-    timezone: Mapped[str] = mapped_column(String(64), default="UTC")  # IANA tz, например Europe/Moscow
+    timezone: Mapped[str] = mapped_column(String(64), default="Europe/Moscow")  # IANA tz, например Europe/Moscow
     digest_time: Mapped[str] = mapped_column(String(5), default="09:00")  # HH:MM в timezone юзера
     digest_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
     transcription_mode: Mapped[str] = mapped_column(String(16), default="local")  # local | api | hybrid
