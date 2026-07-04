@@ -12,6 +12,9 @@ from pydantic_settings import BaseSettings
 logger = logging.getLogger("voice_service")
 logging.basicConfig(level=logging.INFO)
 
+from ffmpeg_helper import ensure_ffmpeg
+ensure_ffmpeg()
+
 class Settings(BaseSettings):
     model_size: str = "small"
     port: int = 8000
