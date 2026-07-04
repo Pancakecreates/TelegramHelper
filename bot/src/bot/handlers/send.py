@@ -86,10 +86,12 @@ async def cmd_send(
     state: FSMContext,
     userbot_manager: UserbotManager,
 ) -> None:
-    # Получаем клиента по умолчанию (текущий пользователь)
+    async with get_session() as session:
+        owner = await get_or_create_user(session, message.from_user.id)
+
     client = userbot_manager.get_client(message.from_user.id)
-    if client is None:
-        await message.answer("Сначала /login.")
+    if client is None and not owner.business_connection_id:
+        await message.answer("Сначала /login — нужно подключить бизнес-бота в настройках Telegram.")
         return
     raw = (command.args or "").strip()
     if not raw:
@@ -293,7 +295,7 @@ async def cb_confirm(callback: CallbackQuery, userbot_manager: UserbotManager) -
         await delete_pending_action(session, action_id)
     
     # Получаем бизнес-подключение владельца
-    owner_telegram_id = client_id or callback.from_user.id
+    owner_telegram_id = payload.get("client_id") or callback.from_user.id
     async with get_session() as session:
         user = await get_or_create_user(session, owner_telegram_id)
         business_conn_id = user.business_connection_id

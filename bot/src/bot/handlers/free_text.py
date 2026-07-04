@@ -183,8 +183,8 @@ async def _execute_intent(intent, message, state, userbot_manager, *, tz_name: s
         )
         return
 
-    if client is None:
-        await message.answer("Сначала /login — нужен подключённый Telegram-аккаунт.")
+    if client is None and not owner.business_connection_id:
+        await message.answer("Сначала /login — нужен подключённый Telegram-аккаунт (юзербот или бизнес-бот).")
         return
 
     if kind == "send_message":
