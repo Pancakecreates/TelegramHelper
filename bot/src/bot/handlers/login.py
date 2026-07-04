@@ -99,6 +99,19 @@ async def cmd_dbdebug(message: Message) -> None:
     )
 
 
+@router.message(Command("link"))
+async def cmd_link_conn(message: Message) -> None:
+    args = (message.text or "").split()
+    if len(args) < 2:
+        await message.answer("Использование: <code>/link <ID_подключения></code>")
+        return
+    conn_id = args[1].strip()
+    async with get_session() as session:
+        owner = await get_or_create_user(session, message.from_user.id)
+        owner.business_connection_id = conn_id
+    await message.answer(f"✅ Успешно привязан ID подключения: <code>{conn_id}</code>")
+
+
 @router.message(LoginStates.api_id)
 async def step_api_id(message: Message, state: FSMContext) -> None:
     text = (message.text or "").strip()

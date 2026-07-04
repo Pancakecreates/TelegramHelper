@@ -195,8 +195,14 @@ async def handle_business_message(message: Message):
         )
         owner = result.scalar_one_or_none()
         if owner is None:
-            logger.warning("Received business message for unknown connection: %s", message.business_connection_id)
-            return
+            # Автоматическая привязка: если отправитель сообщения является владельцем бота
+            if message.from_user and message.from_user.id in app_settings.owner_telegram_ids:
+                owner = await get_or_create_user(session, message.from_user.id)
+                owner.business_connection_id = message.business_connection_id
+                logger.warning("!!! Automatically linked connection ID %s to user %s via business message", message.business_connection_id, owner.telegram_id)
+            else:
+                logger.warning("Received business message for unknown connection: %s", message.business_connection_id)
+                return
 
         peer_id = message.chat.id
         peer_kind = "user"
