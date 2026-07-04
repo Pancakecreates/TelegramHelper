@@ -59,14 +59,22 @@ async def cmd_logout(message: Message, userbot_manager: UserbotManager) -> None:
 @router.message(Command("login"))
 async def cmd_login(message: Message) -> None:
     me = await message.bot.get_me()
+    async with get_session() as session:
+        owner = await get_or_create_user(session, message.from_user.id)
+        conn_id = owner.business_connection_id
+        
+    status_str = f"🟢 <b>Подключено</b> (ID связи: <code>{conn_id}</code>)" if conn_id else "🔴 <b>Не подключено</b>"
+    
     await message.answer(
         "💼 <b>Подключение Telegram Business</b>\n\n"
+        f"Текущий статус: {status_str}\n"
+        f"Ваш Telegram ID: <code>{message.from_user.id}</code>\n\n"
         "Чтобы подключить этого бота к вашему бизнес-аккаунту:\n"
         "1. Перейдите в <b>Настройки Telegram</b> личного аккаунта.\n"
         "2. Откройте раздел <b>Telegram Business</b> -> <b>Чат-боты</b> (или <b>Bots</b>).\n"
         f"3. Введите юзернейм этого бота: <code>@{me.username}</code>.\n"
         "4. Свяжите бота с вашим аккаунтом.\n\n"
-        "<i>После этого бот автоматически начнет обрабатывать ваши сообщения в реальном времени.</i>"
+        "⚠️ <b>ВАЖНО:</b> Если вы привязали бота, но статус показывает «Не подключено» — пожалуйста, <b>отвяжите бота в настройках Telegram и привяжите заново</b> при запущенном боте. Это заставит Telegram отправить боту нужный ключ подключения."
     )
 
 
