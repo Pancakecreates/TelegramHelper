@@ -72,6 +72,7 @@ async def run_bot(userbot_manager: UserbotManager) -> None:
             if bu not in allowed_updates:
                 allowed_updates.append(bu)
                 
+        logger.warning("=== ACTUAL ALLOWED UPDATES SENT TO TELEGRAM: %s ===", allowed_updates)
         await dp.start_polling(bot, allowed_updates=allowed_updates)
     finally:
         await bot.session.close()
