@@ -1,3 +1,4 @@
+import html
 import logging
 
 from aiogram import F, Router
@@ -91,7 +92,7 @@ async def _do_index(message_or_msg, peer_id: int, userbot_manager: UserbotManage
         return
 
     n = await index_chat(provider, owner, contact)
-    await message_or_msg.answer(f"✅ Проиндексировано <b>{n}</b> сообщений в чате с {contact.display_name}.")
+    await message_or_msg.answer(f"✅ Проиндексировано <b>{n}</b> сообщений в чате с {html.escape(contact.display_name)}.")
 
 
 @router.callback_query(F.data == "search:cancel:0")

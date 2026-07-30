@@ -1,5 +1,6 @@
 """Свободный текст (и голос) → агент → действие. Регистрируется последним в bot/app.py,
 чтобы команды и FSM перехватывали свои события раньше."""
+import html
 import json
 import logging
 from pathlib import Path
@@ -177,7 +178,7 @@ async def _execute_intent(intent, message, state, userbot_manager, *, tz_name: s
         for c in items[:30]:
             who = "Я" if c.direction == "mine" else (c.peer_name or "Они")
             d = fmt_local(c.deadline_at, tz_name)
-            lines.append(f"• <b>{who}</b>: {c.text} (до {d})")
+            lines.append(f"• <b>{html.escape(who)}</b>: {html.escape(c.text)} (до {d})")
         await message.answer(
             f"📋 Открытых обязательств: <b>{len(items)}</b>\n\n" + "\n".join(lines)
         )
@@ -303,7 +304,7 @@ async def _execute_intent(intent, message, state, userbot_manager, *, tz_name: s
 
     if kind == "summarize_chat":
         text = await summarize_chat(provider, contact, messages_loaded, heavy=heavy)
-        await message.answer(f"📝 <b>Саммари — {contact.display_name}</b>\n\n{text}")
+        await message.answer(f"📝 <b>Саммари — {html.escape(contact.display_name)}</b>\n\n{text}")
 
     elif kind == "tasks_for_chat":
         items = await extract_and_save_commitments(
@@ -316,10 +317,10 @@ async def _execute_intent(intent, message, state, userbot_manager, *, tz_name: s
             for it in items:
                 who = "Я" if it.get("direction") == "mine" else "Они"
                 deadline = it.get("deadline")
-                tail = f" · до {deadline}" if deadline else ""
-                lines.append(f"• <b>{who}</b>: {it.get('text', '')}{tail}")
+                tail = f" · до {html.escape(str(deadline))}" if deadline else ""
+                lines.append(f"• <b>{html.escape(who)}</b>: {html.escape(it.get('text', ''))}{tail}")
             body = "\n".join(lines)
-        await message.answer(f"✅ <b>Обязательства — {contact.display_name}</b>\n\n{body}")
+        await message.answer(f"✅ <b>Обязательства — {html.escape(contact.display_name)}</b>\n\n{body}")
 
     elif kind == "draft_reply":
         instruction = intent.get("instruction") or None
@@ -331,14 +332,14 @@ async def _execute_intent(intent, message, state, userbot_manager, *, tz_name: s
                 session, user_id=owner.id, kind="send_message", payload=payload
             )
         await message.answer(
-            f"💬 <b>Черновик — {contact.display_name}</b>\n\n{draft}\n\nОтправить?",
+            f"💬 <b>Черновик — {html.escape(contact.display_name)}</b>\n\n{draft}\n\nОтправить?",
             reply_markup=_confirm_keyboard(action.id),
         )
 
     elif kind == "catchup":
         text = await catchup(provider, contact, messages_loaded, heavy=heavy)
         await message.answer(
-            f"⏪ <b>Где мы остановились — {contact.display_name}</b>\n\n{text}"
+            f"⏪ <b>Где мы остановились — {html.escape(contact.display_name)}</b>\n\n{text}"
         )
 
 
@@ -766,9 +767,9 @@ async def _exec_add_reminders_from_chat(intent, message, userbot_manager) -> Non
     for it in items:
         who = "Я" if it.get("direction") == "mine" else "Они"
         deadline = it.get("deadline")
-        tail = f" · до {deadline}" if deadline else ""
-        lines.append(f"• <b>{who}</b>: {it.get('text', '')}{tail}")
+        tail = f" · до {html.escape(str(deadline))}" if deadline else ""
+        lines.append(f"• <b>{html.escape(who)}</b>: {html.escape(it.get('text', ''))}{tail}")
     await message.answer(
-        f"⏰ Поставил {len(items)} напоминаний из чата с {target.display_name}:\n\n"
+        f"⏰ Поставил {len(items)} напоминаний из чата с {html.escape(target.display_name)}:\n\n"
         + "\n".join(lines)
     )

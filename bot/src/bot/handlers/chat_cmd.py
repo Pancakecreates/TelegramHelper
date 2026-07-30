@@ -1,4 +1,5 @@
 import asyncio
+import html
 import json
 import logging
 
@@ -92,9 +93,9 @@ async def cmd_contacts(message: Message) -> None:
         
     lines = []
     for c in contacts[:50]:
-        label = f"<b>{c.display_name}</b>"
+        label = f"<b>{html.escape(c.display_name)}</b>"
         if c.username:
-            label += f" (@{c.username})"
+            label += f" (@{html.escape(c.username)})"
         lines.append(f"• {label} (ID: <code>{c.peer_id}</code>)")
         
     await message.answer(
@@ -177,7 +178,7 @@ async def cb_summary(callback: CallbackQuery, userbot_manager: UserbotManager) -
     text = await summarize_chat(provider, contact, messages, heavy=heavy)
     if callback.message:
         await callback.message.edit_text(
-            f"📝 <b>Саммари — {contact.display_name}</b>\n\n{text}",
+            f"📝 <b>Саммари — {html.escape(contact.display_name)}</b>\n\n{text}",
             reply_markup=_actions_keyboard(peer_id),
         )
 
@@ -204,13 +205,13 @@ async def cb_tasks(callback: CallbackQuery, userbot_manager: UserbotManager) -> 
         for it in items:
             who = "Я" if it.get("direction") == "mine" else "Они"
             deadline = it.get("deadline")
-            tail = f" · до {deadline}" if deadline else ""
-            lines.append(f"• <b>{who}</b>: {it.get('text', '')}{tail}")
+            tail = f" · до {html.escape(str(deadline))}" if deadline else ""
+            lines.append(f"• <b>{html.escape(who)}</b>: {html.escape(it.get('text', ''))}{tail}")
         body = "\n".join(lines)
 
     if callback.message:
         await callback.message.edit_text(
-            f"✅ <b>Обязательства — {contact.display_name}</b>\n\n{body}",
+            f"✅ <b>Обязательства — {html.escape(contact.display_name)}</b>\n\n{body}",
             reply_markup=_actions_keyboard(peer_id),
         )
 
@@ -240,7 +241,7 @@ async def cb_draft(callback: CallbackQuery, userbot_manager: UserbotManager) -> 
     )
     if callback.message:
         await callback.message.edit_text(
-            f"💬 <b>Черновик ответа — {contact.display_name}</b>\n\n{draft}\n\n"
+            f"💬 <b>Черновик ответа — {html.escape(contact.display_name)}</b>\n\n{draft}\n\n"
             f"Отправить?",
             reply_markup=kb.as_markup(),
         )
@@ -257,7 +258,7 @@ async def cb_catchup(callback: CallbackQuery, userbot_manager: UserbotManager) -
     text = await catchup(provider, contact, messages, heavy=heavy)
     if callback.message:
         await callback.message.edit_text(
-            f"⏪ <b>Где мы остановились — {contact.display_name}</b>\n\n{text}",
+            f"⏪ <b>Где мы остановились — {html.escape(contact.display_name)}</b>\n\n{text}",
             reply_markup=_actions_keyboard(peer_id),
         )
 
